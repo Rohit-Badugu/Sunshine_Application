@@ -27,7 +27,8 @@ public class MainActivity extends AppCompatActivity {
         }
         PlacesClient placesClient = Places.createClient(this);
 
-
+        ApiClient apiclient=new ApiClient();
+        apiclient.GetJson();
         AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
                 getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
 
