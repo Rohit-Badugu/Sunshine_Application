@@ -10,7 +10,6 @@ import android.widget.Toast;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-
 public class MainActivity extends AppCompatActivity {
 
     private final int REQUEST_LOCATION_PERMISSION = 1;
@@ -23,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
         requestLocationPermission();
 
         String current_location = get_location();
+        Log.i("Current location:", current_location);
     }
 
     @Override
@@ -37,7 +37,9 @@ public class MainActivity extends AppCompatActivity {
     public void requestLocationPermission() {
         String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION};
         if(EasyPermissions.hasPermissions(this, perms)) {
-            Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
+//            Log.i("Permission is granted");
+            Log.d("Current location", "Request is granted");
         }
         else {
             EasyPermissions.requestPermissions(this, "Please grant the location permission", REQUEST_LOCATION_PERMISSION, perms);
@@ -81,8 +83,8 @@ public class MainActivity extends AppCompatActivity {
 //            case 2:
 //                return ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
         }
+       // Log.i("Permission :", str(permission),  "is not found");
         return false;
     }
-
 
 }
