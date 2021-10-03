@@ -24,6 +24,10 @@ public class ApiClient {
 
     static final String host="https://power.larc.nasa.gov/api/temporal/monthly/point?";
 
+    static final String host_weekly="https://power.larc.nasa.gov/api/temporal/daily/point?";
+
+
+
 
     //https://power.larc.nasa.gov/api/temporal/monthly/point?
     // parameters=ALLSKY_SFC_SW_DWN&
@@ -33,16 +37,28 @@ public class ApiClient {
     // format=JSON&
     // start=2019&end=2020
     //String latitude,String longitude,String granularity,String startDate,String endDate
-    RequestParams GetParams()
+    RequestParams GetParams(Double longitude, Double latitude, int start_month, int start_year, int end_month, int end_year)
     {
         RequestParams params = new RequestParams();
+        System.out.println(Double.toString(longitude).length());
+        System.out.println(Double.toString(latitude).length());
+
+        System.out.println(Double.toString(longitude));
+        System.out.println(Double.toString(latitude));
+
+        String lat = Double.toString(longitude).substring(0, 5);
+        String longi = Double.toString(longitude).substring(0, 5);
+        System.out.println("lat"+Double.toString(longitude));
+        System.out.println("long"+longitude);
+        System.out.println("lat"+start_year);
+        System.out.println("lat"+end_year);
         params.put("parameters", "ALLSKY_SFC_SW_DWN");
         params.put("community", "RE");
-        params.put("longitude","-111.9216");
-        params.put("latitude","33.4099");
+        params.put("longitude",lat);
+        params.put("latitude",longi);
         params.put("format","JSON");
-        params.put("start","2019");
-        params.put("end","2019");
+        params.put("start",Integer.toString(start_year));
+        params.put("end",Integer.toString(end_year));
         return params;
     }
 
