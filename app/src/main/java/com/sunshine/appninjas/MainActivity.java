@@ -32,7 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.sql.SQLNonTransientConnectionException;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -70,9 +70,11 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity
-        implements AdapterView.OnItemSelectedListener{
+        implements AdapterView.OnItemSelectedListener, View.OnClickListener {
 
     private final int REQUEST_LOCATION_PERMISSION = 1;
+    EditText startDate,endDate;
+    public String startDateStr, endDateStr;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -178,14 +180,12 @@ public class MainActivity extends AppCompatActivity
         AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
                 getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
 
+        if (current_location.isEmpty()){
+            autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
+        }
+
         autocompleteFragment.setText(current_location);
-//
-//        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
-//
         System.out.println("Place" + Place.Field.ID + Place.Field.NAME);
-
-//        autocompleteFragment.setPlaceFields(Arrays.asList(current_location));
-
 
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
@@ -204,71 +204,30 @@ public class MainActivity extends AppCompatActivity
 
         Spinner spinner1 = (Spinner) findViewById(R.id.feature);
         spinner1.setOnItemSelectedListener(this);
-
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.feature_array, android.R.layout.simple_spinner_dropdown_item);
-
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner1.setAdapter(adapter);
 
-
         Spinner spinner2 = (Spinner) findViewById(R.id.granularity);
         spinner2.setOnItemSelectedListener(this);
-
         ArrayAdapter<CharSequence> adapter2 = ArrayAdapter.createFromResource(this,
                 R.array.granuality, android.R.layout.simple_spinner_dropdown_item);
-
         adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner2.setAdapter(adapter2);
 
+        startDate = (EditText)findViewById(R.id.startDate);
+        endDate = (EditText)findViewById(R.id.endDate);
 
-        Button mPickDateButton = findViewById(R.id.pick_date_button);
+        String todayDate = new SimpleDateFormat("MM-dd-yyyy", Locale.getDefault()).format(new Date());
 
-//        MaterialDatePicker.Builder builder;
+        endDateStr = getTodaysDate();
+        startDateStr = getPreviousYearDate();
+        endDate.setText(endDateStr);
+        startDate.setText(startDateStr);
 
-        MaterialDatePicker.Builder<Pair<Long, Long>> materialDateBuilder = MaterialDatePicker.Builder.dateRangePicker();
-
-        // now define the properties of the
-        // materialDateBuilder
-        materialDateBuilder.setTitleText("SELECT A DATE");
-
-        // now create the instance of the material date
-        // picker
-        final MaterialDatePicker materialDatePicker = materialDateBuilder.build();
-
-        // handle select date button which opens the
-        // material design date picker
-        mPickDateButton.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-                        if(materialDatePicker.isAdded())
-                        {
-                            return;
-                        }
-
-                        materialDatePicker.show(getSupportFragmentManager(), "MATERIAL_DATE_PICKER");
-                    }
-                });
-
-        // now handle the positive button click from the
-        // material design date picker
-        materialDatePicker.addOnPositiveButtonClickListener(
-                new MaterialPickerOnPositiveButtonClickListener() {
-                    @SuppressLint("SetTextI18n")
-                    @Override
-                    public void onPositiveButtonClick(Object selection) {
-
-                        Log.i("date",  "selected date: " + materialDatePicker.getHeaderText());
-
-                        Toast.makeText(getApplicationContext(),
-                                "selected date: " + materialDatePicker.getHeaderText(),
-                                Toast.LENGTH_LONG)
-                                .show();
-                    }
-                });
-
+        startDate.setOnClickListener(this);
+        endDate.setOnClickListener(this);
     }
 
     private String ParseDate( String date)
@@ -278,6 +237,23 @@ public class MainActivity extends AppCompatActivity
         String month=date.substring(4);
         String formatted=month+"/"+year_formatted;
         return formatted;
+    }
+
+    private static String getTodaysDate(){
+        String todayDate = new SimpleDateFormat("MM-dd-yyyy", Locale.getDefault()).format(new Date());
+        return todayDate;
+    }
+
+    private static String getPreviousYearDate() {
+
+        Calendar calendarEnd=Calendar.getInstance();
+        DateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy");
+
+        // You can substract from the current Year to get the previous year last dates.
+        calendarEnd.set(Calendar.YEAR,calendarEnd.get(Calendar.YEAR)-1);
+        Date previousDate = calendarEnd.getTime();
+        String result = dateFormat.format(previousDate);
+        return result;
     }
 
     @Override
@@ -314,6 +290,7 @@ public class MainActivity extends AppCompatActivity
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             try {
                 List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+
                 System.out.println("****");
                 System.out.println("Address" + addresses.size());
                 System.out.println("Address" + addresses.get(0).getAddressLine(0));
@@ -353,11 +330,6 @@ public class MainActivity extends AppCompatActivity
             case R.id.feature:
                 String[] featuresList = res.getStringArray(R.array.feature_array);
                 Log.i("Array", "feature list:" + Arrays.toString(featuresList) + "position: " + position);
-                Toast.makeText(getApplicationContext(),
-                        featuresList[position],
-                        Toast.LENGTH_LONG)
-                        .show();
-                Log.i("feature toast", "Selected Feature: " + featuresList[position]);
                 break;
 
             case R.id.granularity:
@@ -370,6 +342,102 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
 
+    }
+
+    public static boolean isBeforeStartDate(String startDateStr, String endDateStr) {
+        SimpleDateFormat dfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+        boolean b = false;
+        try {
+            b = dfDate.parse(startDateStr).before(dfDate.parse(endDateStr)) || dfDate.parse(startDateStr).equals(dfDate.parse(endDateStr));
+        } catch (ParseException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return b;
+    }
+
+
+    @Override
+    public void onClick(View view) {
+
+        if (view == endDate) {
+            final Calendar c = Calendar.getInstance();
+            int mYear = c.get(Calendar.YEAR);
+            int mMonth = c.get(Calendar.MONTH);
+            int mDay = c.get(Calendar.DAY_OF_MONTH);
+
+            DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                    new DatePickerDialog.OnDateSetListener() {
+                        @Override
+                        public void onDateSet(DatePicker view, int year,
+                                              int monthOfYear, int dayOfMonth) {
+                            String selectedDate = (monthOfYear + 1) + "-" + dayOfMonth + "-" + year;
+
+                            endDateStr = selectedDate;
+                            endDate.setText(endDateStr);
+
+//                            if(!isBeforeStartDate(startDateStr, selectedDate)){
+//
+//                                Toast.makeText(getApplicationContext(),
+//                                        "End date can't be less than Start date" + "Start DAte" + startDateStr + "end Date" + selectedDate,
+//                                        Toast.LENGTH_LONG)
+//                                        .show();
+//                                Log.e("date", "End date can't be less than Start date.!!");
+//                                Log.i("Date selection", "Inside end dateStart DAte" + startDateStr + "end Date" + endDateStr);
+//
+//
+//                            }else{
+//                                endDateStr = selectedDate;
+//                                endDate.setText(endDateStr);
+//                                Log.i("date", "Inside ondate set..!!");
+//                            }
+
+                        }
+                    }, mYear, mMonth, mDay);
+            DatePicker datePicker = datePickerDialog.getDatePicker();
+            Calendar calendar = Calendar.getInstance();//get the current day
+            datePicker.setMaxDate(calendar.getTimeInMillis());//set the current day as the max date
+            datePickerDialog.show();
+        }
+
+        if (view == startDate) {
+            final Calendar c = Calendar.getInstance();
+            int mYear = c.get(Calendar.YEAR);
+            int mMonth = c.get(Calendar.MONTH);
+            int mDay = c.get(Calendar.DAY_OF_MONTH);
+
+            DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                    new DatePickerDialog.OnDateSetListener() {
+
+                        @Override
+                        public void onDateSet(DatePicker view, int year,
+                                              int monthOfYear, int dayOfMonth) {
+
+                            String selectedDate = (monthOfYear + 1) + "-" + dayOfMonth + "-" + year;
+                            Log.i("Date selection", "Inside start ,Start DAte" + selectedDate + "end Date" + endDateStr);
+
+                            startDateStr = selectedDate;
+                            startDate.setText(startDateStr);
+
+//                            if(!isBeforeStartDate(selectedDate, endDateStr)){
+//                                Toast.makeText(getApplicationContext(),
+//                                "Start date can't be more than End date" + "Start DAte" + startDateStr + "end Date" + endDateStr,
+//                                Toast.LENGTH_LONG)
+//                                .show();
+//                                Log.e("date", "Start date can't be more than End date.!!");
+//                            }else {
+//                                startDateStr = selectedDate;
+//                                startDate.setText(startDateStr);
+//                                Log.i("date", "Inside ondate set..!!");
+//                            }
+
+                        }
+                    }, mYear, mMonth, mDay);
+            DatePicker datePicker = datePickerDialog.getDatePicker();
+            Calendar calendar = Calendar.getInstance();//get the current day
+            datePicker.setMaxDate(calendar.getTimeInMillis());//set the current day as the max date
+            datePickerDialog.show();
+        }
     }
 }
 
