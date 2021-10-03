@@ -17,6 +17,7 @@ import com.google.android.libraries.places.widget.listener.PlaceSelectionListene
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GridLabelRenderer;
 import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
+import com.jjoe64.graphview.helper.StaticLabelsFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
@@ -87,10 +88,10 @@ public class MainActivity extends AppCompatActivity {
                         keyslist.add(date);
                     }
                     System.out.println((keyslist.size()));
-                    DataPoint[] dp = new DataPoint[keyslist.size()];
+                    DataPoint[] dp = new DataPoint[keyslist.size()-1];
                     HashMap<Date,Double> map=new HashMap<Date, Double>();
                     ArrayList<Double>avgList=new ArrayList<>();
-                    for(int i=0;i<keyslist.size();i++)
+                    for(int i=0;i<keyslist.size()-1;i++)
                     {
 
                         String key= keyslist.get(i);
@@ -112,6 +113,9 @@ public class MainActivity extends AppCompatActivity {
 
                     LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(dp);
                     graph.addSeries(series);
+
+                    //StaticLabelsFormatter staticLabelsFormatter = new StaticLabelsFormatter(graph);
+                    //staticLabelsFormatter.setHorizontalLabels(new String[] {"old", "middle", "new"});
                     graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(getApplicationContext()));
                     graph.getGridLabelRenderer().setNumHorizontalLabels(3); // only 4 because of the space
 
@@ -119,6 +123,14 @@ public class MainActivity extends AppCompatActivity {
                   //  graph.getViewport().setMinX(d1.getTime());
                     //graph.getViewport().setMaxX(d3.getTime());
                     graph.getViewport().setXAxisBoundsManual(true);
+                    series.setTitle("Solar Irradiance against time");
+
+                    graph.getGridLabelRenderer().setHorizontalAxisTitle("Time");
+                    graph.getGridLabelRenderer().setVerticalAxisTitle("Value count");
+                    graph.getViewport().setScalable(true);
+                    graph.getViewport().setScalableY(true);
+
+
 
 
 // as we use dates as labels, the human rounding to nice readable numbers

@@ -42,7 +42,7 @@ public class ApiClient {
         params.put("latitude","33.4099");
         params.put("format","JSON");
         params.put("start","2019");
-        params.put("end","2020");
+        params.put("end","2019");
         return params;
     }
 
