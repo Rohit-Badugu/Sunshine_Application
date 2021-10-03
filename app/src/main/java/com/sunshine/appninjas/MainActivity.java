@@ -1,7 +1,15 @@
 package com.sunshine.appninjas;
 
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.datepicker.MaterialPickerOnPositiveButtonClickListener;
+
+import android.annotation.SuppressLint;
+import android.app.DatePickerDialog;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -23,6 +31,8 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.sql.SQLNonTransientConnectionException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -30,17 +40,37 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import okhttp3.Headers;
 import androidx.core.content.ContextCompat;
+import androidx.core.util.Pair;
+
 import android.util.Log;
 import android.Manifest;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.material.datepicker.MaterialDatePicker;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements AdapterView.OnItemSelectedListener{
 
     private final int REQUEST_LOCATION_PERMISSION = 1;
 
@@ -53,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
         requestLocationPermission();
 
         String current_location = get_location();
+
         Log.i("Current location:", current_location);
 
         if (!Places.isInitialized()) {
@@ -147,7 +178,14 @@ public class MainActivity extends AppCompatActivity {
         AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
                 getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
 
-        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
+        autocompleteFragment.setText(current_location);
+//
+//        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
+//
+        System.out.println("Place" + Place.Field.ID + Place.Field.NAME);
+
+//        autocompleteFragment.setPlaceFields(Arrays.asList(current_location));
+
 
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
@@ -162,6 +200,75 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("Location", "An error occurred: " + status);
             }
         });
+
+
+        Spinner spinner1 = (Spinner) findViewById(R.id.feature);
+        spinner1.setOnItemSelectedListener(this);
+
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.feature_array, android.R.layout.simple_spinner_dropdown_item);
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner1.setAdapter(adapter);
+
+
+        Spinner spinner2 = (Spinner) findViewById(R.id.granularity);
+        spinner2.setOnItemSelectedListener(this);
+
+        ArrayAdapter<CharSequence> adapter2 = ArrayAdapter.createFromResource(this,
+                R.array.granuality, android.R.layout.simple_spinner_dropdown_item);
+
+        adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner2.setAdapter(adapter2);
+
+
+        Button mPickDateButton = findViewById(R.id.pick_date_button);
+
+//        MaterialDatePicker.Builder builder;
+
+        MaterialDatePicker.Builder<Pair<Long, Long>> materialDateBuilder = MaterialDatePicker.Builder.dateRangePicker();
+
+        // now define the properties of the
+        // materialDateBuilder
+        materialDateBuilder.setTitleText("SELECT A DATE");
+
+        // now create the instance of the material date
+        // picker
+        final MaterialDatePicker materialDatePicker = materialDateBuilder.build();
+
+        // handle select date button which opens the
+        // material design date picker
+        mPickDateButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        if(materialDatePicker.isAdded())
+                        {
+                            return;
+                        }
+
+                        materialDatePicker.show(getSupportFragmentManager(), "MATERIAL_DATE_PICKER");
+                    }
+                });
+
+        // now handle the positive button click from the
+        // material design date picker
+        materialDatePicker.addOnPositiveButtonClickListener(
+                new MaterialPickerOnPositiveButtonClickListener() {
+                    @SuppressLint("SetTextI18n")
+                    @Override
+                    public void onPositiveButtonClick(Object selection) {
+
+                        Log.i("date",  "selected date: " + materialDatePicker.getHeaderText());
+
+                        Toast.makeText(getApplicationContext(),
+                                "selected date: " + materialDatePicker.getHeaderText(),
+                                Toast.LENGTH_LONG)
+                                .show();
+                    }
+                });
+
     }
 
     private String ParseDate( String date)
@@ -197,8 +304,6 @@ public class MainActivity extends AppCompatActivity {
 
     public String get_location(){
 
-        String newloc = "0,0";
-
         //Checking for location permissions
         if (check_permission(1)) {
             GPSTrack gps;
@@ -206,20 +311,24 @@ public class MainActivity extends AppCompatActivity {
             double latitude = gps.getLatitude();
             double longitude = gps.getLongitude();
 
-            if (gps.canGetLocation()) {
-                if (latitude != 0 || longitude != 0) {
-                    System.out.println("New data" + latitude + "," + longitude);
-                    newloc = latitude+","+longitude;
+            Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+            try {
+                List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+                System.out.println("****");
+                System.out.println("Address" + addresses.size());
+                System.out.println("Address" + addresses.get(0).getAddressLine(0));
+                String fullAddress = addresses.get(0).getAddressLine(0);
+                return fullAddress;
 
-                } else {
-                    Log.i("New Updated Location:", "NULL");
-                }
-            }else{
-                System.out.println("GPS is not enabled!");
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e("Location", "Error while fetching location from GPS");
             }
+        }else{
+            System.out.println("GPS Permission is not provided!");
         }
 
-        return newloc;
+        return "";
     }
 
 
@@ -235,4 +344,32 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    @Override
+    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
+
+        Resources res = getResources();
+
+        switch(adapterView.getId()){
+            case R.id.feature:
+                String[] featuresList = res.getStringArray(R.array.feature_array);
+                Log.i("Array", "feature list:" + Arrays.toString(featuresList) + "position: " + position);
+                Toast.makeText(getApplicationContext(),
+                        featuresList[position],
+                        Toast.LENGTH_LONG)
+                        .show();
+                Log.i("feature toast", "Selected Feature: " + featuresList[position]);
+                break;
+
+            case R.id.granularity:
+                String[] granualarityList = res.getStringArray(R.array.granuality);
+                Log.i("granualarityList toast", "Selected granualaity: "
+                        + granualarityList[position]);
+        }
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> adapterView) {
+
+    }
 }
+
