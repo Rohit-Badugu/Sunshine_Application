@@ -5,11 +5,16 @@ import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.datepicker.MaterialPickerOnPositiveButtonClickListener;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.location.Address;
 import android.location.Geocoder;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -86,7 +91,17 @@ public class MainActivity extends AppCompatActivity
 
         String current_location = get_location();
 
-        Log.i("Current location:", current_location);
+
+
+//        Log.i("Current location:", current_location);
+
+
+        if (!isNetworkAvailable()){
+            Log.i("Internet connection", "Please check your internet connectivity");
+            Toast.makeText(this, "Please check your internet connectivity",
+                    Toast.LENGTH_SHORT).show();
+        }
+
 
         if (!Places.isInitialized()) {
             Places.initialize(getApplicationContext(), apiKey);
@@ -171,21 +186,23 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onFailure(int statusCode, Headers headers, String response, Throwable throwable) {
-                Log.e("JSON OUTPUT FAILURE",headers.toString());
-
+                if (headers == null){
+                    Log.e("JSON Output Failure", "Network is unavailable, no repsonse fromthe server");
+                }else{
+                    Log.e("JSON OUTPUT FAILURE",headers.toString());
+                }
             }
-
         });
 
         AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
                 getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
 
-        if (current_location.isEmpty()){
+        if (current_location==null || current_location.isEmpty()) {
             autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
+        }else{
+            autocompleteFragment.setText(current_location);
         }
 
-        autocompleteFragment.setText(current_location);
-        System.out.println("Place" + Place.Field.ID + Place.Field.NAME);
 
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
@@ -244,6 +261,24 @@ public class MainActivity extends AppCompatActivity
         return todayDate;
     }
 
+    private void alertDialog() {
+        AlertDialog.Builder dialog=new AlertDialog.Builder(this);
+        dialog.setMessage("Please turn on the GPS");
+        dialog.setTitle("Dialog Box");
+        dialog.setPositiveButton("Okay",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,
+                                        int which) {
+//                       Toast.makeText(getApplicationContext(),"Yes is clicked",Toast.LENGTH_LONG).show();
+                        Log.i("Dialog Box", "Clicked on okay");
+                    }
+                });
+
+        AlertDialog alertDialog=dialog.create();
+        alertDialog.show();
+    }
+
+
     private static String getPreviousYearDate() {
 
         Calendar calendarEnd=Calendar.getInstance();
@@ -278,6 +313,14 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+
     public String get_location(){
 
         //Checking for location permissions
@@ -290,6 +333,15 @@ public class MainActivity extends AppCompatActivity
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             try {
                 List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+
+                if (addresses.size() == 0){
+//                    Toast.makeText(getApplicationContext(),
+//                                        "Please turn on the GPS" ,
+//                                        Toast.LENGTH_LONG)
+//                                        .show();
+                    alertDialog();
+                    return null;
+                }
 
                 System.out.println("****");
                 System.out.println("Address" + addresses.size());
@@ -305,7 +357,7 @@ public class MainActivity extends AppCompatActivity
             System.out.println("GPS Permission is not provided!");
         }
 
-        return "";
+        return null;
     }
 
 
@@ -347,15 +399,17 @@ public class MainActivity extends AppCompatActivity
     public static boolean isBeforeStartDate(String startDateStr, String endDateStr) {
         SimpleDateFormat dfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
         boolean b = false;
+
+
         try {
             b = dfDate.parse(startDateStr).before(dfDate.parse(endDateStr)) || dfDate.parse(startDateStr).equals(dfDate.parse(endDateStr));
         } catch (ParseException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+
         return b;
     }
-
 
     @Override
     public void onClick(View view) {
@@ -391,7 +445,6 @@ public class MainActivity extends AppCompatActivity
 //                                endDate.setText(endDateStr);
 //                                Log.i("date", "Inside ondate set..!!");
 //                            }
-
                         }
                     }, mYear, mMonth, mDay);
             DatePicker datePicker = datePickerDialog.getDatePicker();
