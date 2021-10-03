@@ -3,18 +3,11 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="..\:/Users/rebba/AppData/Local/Android/Sdk/platforms/android-30/data/res/layout/activity_list_item.xml" value="0.1796875" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/drawable/activity_splash.xml" value="0.1" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/drawable/border_rect.xml" value="0.1" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/drawable/gradient_spinner.xml" value="0.1" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/drawable/ic_launcher_background.xml" value="0.1" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/layout/activity_main.xml" value="0.25" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/layout/activity_splash_screen.xml" value="0.22" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/layout/main2.xml" value="0.1" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/layout/spinner_text.xml" value="0.15572916666666667" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/layout/splash_layout.xml" value="0.1" />
-        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.1" />
+        <entry key="..\:/Users/Rohit33/AndroidStudioProjects/Sunshine_Application/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.2203125" />
+        <entry key="..\:/Users/Rohit33/AndroidStudioProjects/Sunshine_Application/app/src/main/res/drawable/border_rect.xml" value="0.2203125" />
+        <entry key="..\:/Users/Rohit33/AndroidStudioProjects/Sunshine_Application/app/src/main/res/drawable/ic_launcher_background.xml" value="0.2203125" />
+        <entry key="..\:/Users/Rohit33/AndroidStudioProjects/Sunshine_Application/app/src/main/res/layout/activity_main.xml" value="0.14990942028985507" />
+        <entry key="..\:/Users/rebba/Downloads/Sunshine_Application/app/src/main/res/layout/activity_main.xml" value="0.9516129032258065" />
       </map>
     </option>
   </component>
