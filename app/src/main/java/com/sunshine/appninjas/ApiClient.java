@@ -46,8 +46,8 @@ public class ApiClient {
         System.out.println(Double.toString(longitude));
         System.out.println(Double.toString(latitude));
 
-        String lat = Double.toString(longitude).substring(0, 5);
-        String longi = Double.toString(longitude).substring(0, 5);
+        String lat = Double.toString(longitude).substring(0, 3);
+        String longi = Double.toString(longitude).substring(0, 3);
         System.out.println("lat"+Double.toString(longitude));
         System.out.println("long"+longitude);
         System.out.println("lat"+start_year);

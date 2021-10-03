@@ -11,6 +11,15 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+<!--    <style name="SplashScreen" parent="Theme.AppCompat.NoActionBar">-->
+<!--        <item name="android:windowBackground">@drawable/ic_launcher_background</item>-->
+<!--    </style>-->
+
+<!--    <style name="SplashScreen" parent="Theme.AppCompat.NoActionBar">-->
+<!--        <item name="android:windowBackground">@drawable/activity_splash</item>-->
+<!--    </style>-->
+
+
 <!--    <style name="spinner_style">-->
 <!--        <item name="android:layout_width">match_parent</item>-->
 <!--        <item name="android:layout_height">wrap_content</item>-->

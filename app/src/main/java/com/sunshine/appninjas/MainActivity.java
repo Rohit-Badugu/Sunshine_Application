@@ -8,12 +8,18 @@ import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.datepicker.MaterialPickerOnPositiveButtonClickListener;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.location.Address;
 import android.location.Geocoder;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
 
 import com.codepath.asynchttpclient.AsyncHttpClient;
@@ -102,7 +108,17 @@ public class MainActivity extends AppCompatActivity
         requestLocationPermission();
         String current_location = get_location();
 
-        Log.i("Current location:", current_location);
+
+
+//        Log.i("Current location:", current_location);
+
+
+        if (!isNetworkAvailable()){
+            Log.i("Internet connection", "Please check your internet connectivity");
+            Toast.makeText(this, "Please check your internet connectivity",
+                    Toast.LENGTH_SHORT).show();
+        }
+
 
         if (!Places.isInitialized()) {
             Places.initialize(getApplicationContext(), getString(R.string.api_key));
@@ -215,8 +231,8 @@ public class MainActivity extends AppCompatActivity
                     graph.getViewport().setXAxisBoundsManual(true);
                     series.setTitle("Solar Irradiance against time");
 
-                    graph.getGridLabelRenderer().setHorizontalAxisTitle("Time");
-                    graph.getGridLabelRenderer().setVerticalAxisTitle("Value count");
+                    graph.getGridLabelRenderer().setHorizontalAxisTitle("Date");
+                    graph.getGridLabelRenderer().setVerticalAxisTitle("Solar Radiance (" + Html.fromHtml("W/m<sup>2</sup>)"));
                     graph.getViewport().setScalable(true);
                     graph.getViewport().setScalableY(true);
 
@@ -240,10 +256,12 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onFailure(int statusCode, Headers headers, String response, Throwable throwable) {
-                Log.e("JSON OUTPUT FAILURE",headers.toString());
-
+                if (headers == null){
+                    Log.e("JSON Output Failure", "Network is unavailable, no repsonse fromthe server");
+                }else{
+                    Log.e("JSON OUTPUT FAILURE",headers.toString());
+                }
             }
-
         });
     }
 
@@ -255,6 +273,12 @@ public class MainActivity extends AppCompatActivity
         client.get(ApiClient.host_weekly, requestParams, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Headers headers, JSON json) {
+
+//        if (current_location==null || current_location.isEmpty()) {
+//            autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
+//        }else{
+//            autocompleteFragment.setText(current_location);
+//        }
 
                 Log.i("JSON OUTPUT SUCCESS",json.toString());
 
@@ -296,17 +320,12 @@ public class MainActivity extends AppCompatActivity
                             e.printStackTrace();
                         }
                     }
-                    System.out.println("yo");
                     graph = (GraphView) findViewById(R.id.graph);
                     graph.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.HORIZONTAL);
 
-                    System.out.println("yo2");
                     LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(dp);
-                    System.out.println("yo3");
                     graph.refreshDrawableState();
-                    System.out.println("yo4");
                     graph.addSeries(series);
-                    System.out.println("yo5");
 
                     //StaticLabelsFormatter staticLabelsFormatter = new StaticLabelsFormatter(graph);
                     //staticLabelsFormatter.setHorizontalLabels(new String[] {"old", "middle", "new"});
@@ -319,8 +338,8 @@ public class MainActivity extends AppCompatActivity
                     graph.getViewport().setXAxisBoundsManual(true);
                     series.setTitle("Solar Irradiance against time");
 
-                    graph.getGridLabelRenderer().setHorizontalAxisTitle("Time");
-                    graph.getGridLabelRenderer().setVerticalAxisTitle("Value count");
+                    graph.getGridLabelRenderer().setHorizontalAxisTitle("Date");
+                    graph.getGridLabelRenderer().setVerticalAxisTitle("Solar Radiance" + Html.fromHtml("W/m<sup>2</sup>"));
                     graph.getViewport().setScalable(true);
                     graph.getViewport().setScalableY(true);
 
@@ -363,6 +382,24 @@ public class MainActivity extends AppCompatActivity
         return todayDate;
     }
 
+    private void alertDialog() {
+        AlertDialog.Builder dialog=new AlertDialog.Builder(this);
+        dialog.setMessage("Please turn on the GPS");
+        dialog.setTitle("Dialog Box");
+        dialog.setPositiveButton("Okay",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,
+                                        int which) {
+//                       Toast.makeText(getApplicationContext(),"Yes is clicked",Toast.LENGTH_LONG).show();
+                        Log.i("Dialog Box", "Clicked on okay");
+                    }
+                });
+
+        AlertDialog alertDialog=dialog.create();
+        alertDialog.show();
+    }
+
+
     private static String getPreviousYearDate() {
 
         Calendar calendarEnd=Calendar.getInstance();
@@ -397,6 +434,14 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+
     public String get_location(){
 
         //Checking for location permissions
@@ -409,6 +454,16 @@ public class MainActivity extends AppCompatActivity
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             try {
                 List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+
+                if (addresses.size() == 0){
+//                    Toast.makeText(getApplicationContext(),
+//                                        "Please turn on the GPS" ,
+//                                        Toast.LENGTH_LONG)
+//                                        .show();
+                    alertDialog();
+                    return null;
+                }
+
                 System.out.println("latt" + latitude);
                 System.out.println("longitude"+longitude);
                 System.out.println("****");
@@ -477,7 +532,7 @@ public class MainActivity extends AppCompatActivity
             System.out.println("GPS Permission is not provided!");
         }
 
-        return "";
+        return null;
     }
 
     public Double[] get_coordinates(String myLocation)
@@ -536,15 +591,17 @@ public class MainActivity extends AppCompatActivity
     public static boolean isBeforeStartDate(String startDateStr, String endDateStr) {
         SimpleDateFormat dfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
         boolean b = false;
+
+
         try {
             b = dfDate.parse(startDateStr).before(dfDate.parse(endDateStr)) || dfDate.parse(startDateStr).equals(dfDate.parse(endDateStr));
         } catch (ParseException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+
         return b;
     }
-
 
     @Override
     public void onClick(View view) {
@@ -581,7 +638,6 @@ public class MainActivity extends AppCompatActivity
 //                                endDate.setText(endDateStr);
 //                                Log.i("date", "Inside ondate set..!!");
 //                            }
-
                         }
                     }, mYear, mMonth, mDay);
             DatePicker datePicker = datePickerDialog.getDatePicker();
