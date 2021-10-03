@@ -25,6 +25,7 @@ import com.google.android.libraries.places.widget.listener.PlaceSelectionListene
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GridLabelRenderer;
 import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
+import com.jjoe64.graphview.helper.StaticLabelsFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
@@ -65,6 +66,9 @@ import com.google.android.material.datepicker.MaterialDatePicker;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.SortedMap;
+import java.util.TimeZone;
+import java.util.TreeMap;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -73,6 +77,17 @@ public class MainActivity extends AppCompatActivity
         implements AdapterView.OnItemSelectedListener, View.OnClickListener {
 
     private final int REQUEST_LOCATION_PERMISSION = 1;
+    String apiKey;
+    double latitude;
+    double longitude;
+    int start_month;
+    int start_year;
+
+    int end_month;
+    int end_year;
+    ApiClient apiclient;
+    GraphView graph;
+
     EditText startDate,endDate;
     public String startDateStr, endDateStr;
 
@@ -80,127 +95,22 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        String apiKey = getString(R.string.api_key);
 
         requestLocationPermission();
-
         String current_location = get_location();
 
         Log.i("Current location:", current_location);
 
         if (!Places.isInitialized()) {
-            Places.initialize(getApplicationContext(), apiKey);
+            Places.initialize(getApplicationContext(), getString(R.string.api_key));
         }
         PlacesClient placesClient = Places.createClient(this);
 
-        ApiClient apiclient=new ApiClient();
-        RequestParams requestParams = apiclient.GetParams();
-        AsyncHttpClient client = new AsyncHttpClient();
-        client.get(ApiClient.host, requestParams, new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Headers headers, JSON json) {
+        apiclient=new ApiClient();
 
-                Log.i("JSON OUTPUT SUCCESS",json.toString());
-
-                JSONObject jsonObject= json.jsonObject;
-                try {
-                    JSONObject propertiesObj = jsonObject.getJSONObject("properties");
-                    JSONObject parametersObj= propertiesObj.getJSONObject("parameter");
-                    JSONObject allskyObj=parametersObj.getJSONObject("ALLSKY_SFC_SW_DWN");
-                    //System.out.println(allskyObj.length());
-
-                    Iterator<String> keysIterator=allskyObj.keys();
-                    ArrayList<String> keyslist=new ArrayList<>();
-
-
-                    while(keysIterator.hasNext())
-                    {   String date=keysIterator.next();
-                        //String date_formatted=ParseDate(date);
-
-                        keyslist.add(date);
-                    }
-                    System.out.println((keyslist.size()));
-                    DataPoint[] dp = new DataPoint[keyslist.size()];
-                    HashMap<Date,Double> map=new HashMap<Date, Double>();
-                    ArrayList<Double>avgList=new ArrayList<>();
-                    for(int i=0;i<keyslist.size();i++)
-                    {
-
-                        String key= keyslist.get(i);
-                        Date date1= null;
-                        try {
-                            date1 = new SimpleDateFormat("yyyyMM").parse(key);
-                            Double value=Double.parseDouble(allskyObj.getString(key));
-                            dp[i]=new DataPoint(date1,value);
-                            map.put(date1,value);
-
-                        } catch (ParseException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    GraphView graph = (GraphView) findViewById(R.id.graph);
-                    graph.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.HORIZONTAL);
-
-
-                    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(dp);
-                    graph.addSeries(series);
-                    graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(getApplicationContext()));
-                    graph.getGridLabelRenderer().setNumHorizontalLabels(3); // only 4 because of the space
-
-// set manual x bounds to have nice steps
-                  //  graph.getViewport().setMinX(d1.getTime());
-                    //graph.getViewport().setMaxX(d3.getTime());
-                    graph.getViewport().setXAxisBoundsManual(true);
-
-
-// as we use dates as labels, the human rounding to nice readable numbers
-// is not necessary
-                    graph.getGridLabelRenderer().setHumanRounding(false);
-                    for (Map.Entry<Date,Double> entry : map.entrySet()) {
-                        System.out.println(entry.getKey()+" : "+entry.getValue());
-                    }
-
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-
-            }
-
-            @Override
-            public void onFailure(int statusCode, Headers headers, String response, Throwable throwable) {
-                Log.e("JSON OUTPUT FAILURE",headers.toString());
-
-            }
-
-        });
-
-        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
-                getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
-
-        if (current_location.isEmpty()){
-            autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
-        }
-
-        autocompleteFragment.setText(current_location);
-        System.out.println("Place" + Place.Field.ID + Place.Field.NAME);
-
-        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(Place place) {
-                // TODO: Get info about the selected place.
-                Log.i("Location", "Place: " + place.getName() + ", " + place.getId());
-            }
-
-            @Override
-            public void onError(Status status) {
-                // TODO: Handle the error.
-                Log.i("Location", "An error occurred: " + status);
-            }
-        });
-
+        Date presentdate=new Date();
+        start_year=2019;
+        end_year=2020;
 
         Spinner spinner1 = (Spinner) findViewById(R.id.feature);
         spinner1.setOnItemSelectedListener(this);
@@ -225,9 +135,215 @@ public class MainActivity extends AppCompatActivity
         startDateStr = getPreviousYearDate();
         endDate.setText(endDateStr);
         startDate.setText(startDateStr);
+        Log.i("DATES", startDateStr + " " + endDateStr);
 
         startDate.setOnClickListener(this);
         endDate.setOnClickListener(this);
+
+        updateGraph();
+
+    }
+
+    private void updateGraph(){
+        RequestParams requestParams = apiclient.GetParams(latitude,longitude,start_month,start_year,end_month,end_year);
+        AsyncHttpClient client = new AsyncHttpClient();
+        System.out.println(requestParams.get("latitude"));
+        System.out.println(requestParams.get("longitude"));
+        client.get(ApiClient.host, requestParams, new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Headers headers, JSON json) {
+
+                Log.i("JSON OUTPUT SUCCESS",json.toString());
+
+                JSONObject jsonObject= json.jsonObject;
+                try {
+                    JSONObject propertiesObj = jsonObject.getJSONObject("properties");
+                    JSONObject parametersObj= propertiesObj.getJSONObject("parameter");
+                    JSONObject allskyObj=parametersObj.getJSONObject("ALLSKY_SFC_SW_DWN");
+                    //System.out.println(allskyObj.length());
+
+                    Iterator<String> keysIterator=allskyObj.keys();
+                    ArrayList<String> keyslist=new ArrayList<>();
+
+
+                    while(keysIterator.hasNext())
+                    {   String date=keysIterator.next();
+                        //String date_formatted=ParseDate(date);
+
+                        keyslist.add(date);
+                    }
+                    System.out.println((keyslist.size()));
+                    DataPoint[] dp = new DataPoint[keyslist.size()-1];
+                    HashMap<Date,Double> map=new HashMap<Date, Double>();
+                    ArrayList<Double>avgList=new ArrayList<>();
+                    for(int i=0;i<keyslist.size()-1;i++)
+                    {
+
+
+                        String key= keyslist.get(i);
+                        Date date1= null;
+                        try {
+                            date1 = new SimpleDateFormat("yyyyMM").parse(key);
+                            Double value=Double.parseDouble(allskyObj.getString(key));
+                            dp[i]=new DataPoint(date1,value);
+                            map.put(date1,value);
+
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    graph = (GraphView) findViewById(R.id.graph);
+                    graph.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.HORIZONTAL);
+
+
+                    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(dp);
+                    //graph.removeAllSeries();
+                    graph.addSeries(series);
+
+                    //StaticLabelsFormatter staticLabelsFormatter = new StaticLabelsFormatter(graph);
+                    //staticLabelsFormatter.setHorizontalLabels(new String[] {"old", "middle", "new"});
+                    graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(getApplicationContext()));
+                    graph.getGridLabelRenderer().setNumHorizontalLabels(3); // only 4 because of the space
+
+// set manual x bounds to have nice steps
+                    //  graph.getViewport().setMinX(d1.getTime());
+                    //graph.getViewport().setMaxX(d3.getTime());
+                    graph.getViewport().setXAxisBoundsManual(true);
+                    series.setTitle("Solar Irradiance against time");
+
+                    graph.getGridLabelRenderer().setHorizontalAxisTitle("Time");
+                    graph.getGridLabelRenderer().setVerticalAxisTitle("Value count");
+                    graph.getViewport().setScalable(true);
+                    graph.getViewport().setScalableY(true);
+
+
+
+
+// as we use dates as labels, the human rounding to nice readable numbers
+// is not necessary
+                    graph.getGridLabelRenderer().setHumanRounding(false);
+                    for (Map.Entry<Date,Double> entry : map.entrySet()) {
+                        System.out.println(entry.getKey()+" : "+entry.getValue());
+                    }
+
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+
+            @Override
+            public void onFailure(int statusCode, Headers headers, String response, Throwable throwable) {
+                Log.e("JSON OUTPUT FAILURE",headers.toString());
+
+            }
+
+        });
+    }
+
+    private void updateGraphdaily(){
+        RequestParams requestParams = apiclient.GetParams(latitude,longitude,start_month,start_year,end_month,end_year);
+        AsyncHttpClient client = new AsyncHttpClient();
+        System.out.println(requestParams.get("latitude"));
+        System.out.println(requestParams.get("longitude"));
+        client.get(ApiClient.host_weekly, requestParams, new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Headers headers, JSON json) {
+
+                Log.i("JSON OUTPUT SUCCESS",json.toString());
+
+                JSONObject jsonObject= json.jsonObject;
+                try {
+                    JSONObject propertiesObj = jsonObject.getJSONObject("properties");
+                    JSONObject parametersObj= propertiesObj.getJSONObject("parameter");
+                    JSONObject allskyObj=parametersObj.getJSONObject("ALLSKY_SFC_SW_DWN");
+                    System.out.println(allskyObj.length());
+
+                    Iterator<String> keysIterator=allskyObj.keys();
+                    ArrayList<String> keyslist=new ArrayList<>();
+
+                    while(keysIterator.hasNext())
+                    {   String date=keysIterator.next();
+                        //String date_formatted=ParseDate(date);
+                        keyslist.add(date);
+                    }
+                    System.out.println((keyslist.size()));
+                    DataPoint[] dp = new DataPoint[5];
+                    SortedMap<Date,Double> map=new TreeMap<Date, Double>();
+                    ArrayList<Double>avgList=new ArrayList<>();
+                    for(int i=0;i<5;i++)
+                    {
+
+
+                        String key= keyslist.get(i);
+                        Date date1= null;
+                        try {
+                            date1 = new SimpleDateFormat("yyyyMMdd").parse(key);
+                            System.out.println(date1);
+                            Double value=Double.parseDouble(allskyObj.getString(key));
+                            System.out.println(value);
+                            dp[i]=new DataPoint(date1,value);
+                            map.put(date1,value);
+
+                        } catch (ParseException e) {
+                            System.out.println("ninj");
+                            e.printStackTrace();
+                        }
+                    }
+                    System.out.println("yo");
+                    graph = (GraphView) findViewById(R.id.graph);
+                    graph.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.HORIZONTAL);
+
+                    System.out.println("yo2");
+                    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(dp);
+                    System.out.println("yo3");
+                    graph.refreshDrawableState();
+                    System.out.println("yo4");
+                    graph.addSeries(series);
+                    System.out.println("yo5");
+
+                    //StaticLabelsFormatter staticLabelsFormatter = new StaticLabelsFormatter(graph);
+                    //staticLabelsFormatter.setHorizontalLabels(new String[] {"old", "middle", "new"});
+                    graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(getApplicationContext()));
+                    graph.getGridLabelRenderer().setNumHorizontalLabels(3); // only 4 because of the space
+
+// set manual x bounds to have nice steps
+                    //  graph.getViewport().setMinX(d1.getTime());
+                    //graph.getViewport().setMaxX(d3.getTime());
+                    graph.getViewport().setXAxisBoundsManual(true);
+                    series.setTitle("Solar Irradiance against time");
+
+                    graph.getGridLabelRenderer().setHorizontalAxisTitle("Time");
+                    graph.getGridLabelRenderer().setVerticalAxisTitle("Value count");
+                    graph.getViewport().setScalable(true);
+                    graph.getViewport().setScalableY(true);
+
+
+
+
+// as we use dates as labels, the human rounding to nice readable numbers
+// is not necessary
+                    graph.getGridLabelRenderer().setHumanRounding(false);
+
+
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+
+            @Override
+            public void onFailure(int statusCode, Headers headers, String response, Throwable throwable) {
+                Log.e("JSON OUTPUT FAILURE",headers.toString());
+
+            }
+
+        });
     }
 
     private String ParseDate( String date)
@@ -284,17 +400,31 @@ public class MainActivity extends AppCompatActivity
         if (check_permission(1)) {
             GPSTrack gps;
             gps = new GPSTrack(MainActivity.this);
-            double latitude = gps.getLatitude();
-            double longitude = gps.getLongitude();
+             latitude = gps.getLatitude();
+             longitude = gps.getLongitude();
 
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             try {
                 List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
-
+                System.out.println("latt" + latitude);
+                System.out.println("longitude"+longitude);
                 System.out.println("****");
                 System.out.println("Address" + addresses.size());
+
                 System.out.println("Address" + addresses.get(0).getAddressLine(0));
-                String fullAddress = addresses.get(0).getAddressLine(0);
+
+                AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
+                        getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+
+                if (!Places.isInitialized()) {
+                    Places.initialize(getApplicationContext(), getString(R.string.api_key));
+                }
+
+                autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.PHOTO_METADATAS));
+
+
+               String fullAddress = addresses.get(0).getAddressLine(0);
+                autocompleteFragment.setText(fullAddress);
                 return fullAddress;
 
             } catch (IOException e) {
@@ -306,6 +436,23 @@ public class MainActivity extends AppCompatActivity
         }
 
         return "";
+    }
+
+    public Double[] get_coordinates(String myLocation)
+    {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        List<Address> addresses = null;
+        try {
+            addresses = geocoder.getFromLocationName(myLocation, 1);
+            Address address = addresses.get(0);
+            double longitude = address.getLongitude();
+            double latitude = address.getLatitude();
+
+            return new Double[]{latitude,longitude};
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new Double[]{0.0,0.0};
     }
 
 
@@ -359,6 +506,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onClick(View view) {
+        System.out.println("In onClick button");
 
         if (view == endDate) {
             final Calendar c = Calendar.getInstance();
