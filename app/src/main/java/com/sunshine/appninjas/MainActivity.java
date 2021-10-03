@@ -1,6 +1,9 @@
 package com.sunshine.appninjas;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.datepicker.MaterialPickerOnPositiveButtonClickListener;
 
@@ -420,10 +423,49 @@ public class MainActivity extends AppCompatActivity
                     Places.initialize(getApplicationContext(), getString(R.string.api_key));
                 }
 
-                autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.PHOTO_METADATAS));
+                autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.PHOTO_METADATAS,Place.Field.LAT_LNG,Place.Field.ADDRESS));
+                autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+                    @Override
+                    public void onPlaceSelected(@NonNull Place place) {
+                        String address1 = place.getAddress();
+                        LatLng latlng=place.getLatLng();
+                        latitude = latlng.latitude;
+                        longitude = latlng.longitude;
+                        //Log.i("location",address1);
+
+                        System.out.println("long sai" + longitude);
+                        //Double[] coordinates = get_coordinates(address1);
+                       // autocompleteFragment.setText(address1);
+                      //  latitude = coordinates[0];
+                      //  longitude = coordinates[1];
+
+                        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+                        List<Address> addresses = null;
+                        try {
+                            addresses = geocoder.getFromLocationName(address1, 1);
+                            Address address = addresses.get(0);
+                             longitude = address.getLongitude();
+                             latitude = address.getLatitude();
 
 
-               String fullAddress = addresses.get(0).getAddressLine(0);
+
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        graph.removeAllSeries();
+                        updateGraph();
+                    }
+
+                    @Override
+                    public void onError(@NonNull Status status) {
+
+                    }
+                });
+
+
+                String fullAddress = addresses.get(0).getAddressLine(0);
                 autocompleteFragment.setText(fullAddress);
                 return fullAddress;
 
