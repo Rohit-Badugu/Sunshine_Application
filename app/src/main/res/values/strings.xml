@@ -1,3 +1,29 @@
 <resources>
     <string name="app_name">Sunshine_Application</string>
+
+    <string name="api_key">AIzaSyBZEzFVsnotCXqMpLPKeq4tFO1RHrdk29k</string>
+    <string name="button_text">Date</string>
+    <string name="date">Date</string>
+    <string name="start_date">startDate</string>
+    <string name="end_date">endDate</string>
+
+    <string-array name="feature_array">
+        <item>Sunshine</item>
+        <item>Temperature</item>
+        <item>Humidity</item>
+        <item>Wind</item>
+    </string-array>
+
+<!--    <string-array name="time_period_array">-->
+<!--        <item>Weekly</item>-->
+<!--        <item>Bi-Weekly</item>-->
+<!--        <item>Monthly</item>-->
+<!--    </string-array>-->
+
+    <string-array name="granuality">
+        <item>Weekly</item>
+        <item>Bi-Weekly</item>
+        <item>Monthly</item>
+    </string-array>
+
 </resources>
